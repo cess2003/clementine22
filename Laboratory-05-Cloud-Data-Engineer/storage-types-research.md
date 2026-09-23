@@ -11,3 +11,4 @@ Cloud storage can be divided into three primary types: Block Storage, File Stora
 ## Why Object Storage Is Best for the Client
 
 Object Storage is well suited for the client's photo-sharing application because it is designed to store large amounts of unstructured data such as user-uploaded images. It can organize large numbers of files into buckets and allows applications to access objects without depending on a traditional server's local hard drive.
+Complete storage types research
