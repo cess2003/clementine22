@@ -1,0 +1,56 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isStaff() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['staff', 'admin'];
+    }
+
+    // Profiles: a user can create their own CUSTOMER profile and edit it,
+    // but can never change their own role. Staff roles are set in the console.
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isStaff());
+      allow create: if signedIn() && request.auth.uid == uid
+                    && request.resource.data.role == 'customer';
+      allow update: if signedIn() && request.auth.uid == uid
+                    && request.resource.data.role == resource.data.role;
+    }
+
+    // Menu: any signed-in user can read, only staff can change.
+    match /products/{id} {
+      allow read: if signedIn();
+      allow write: if isStaff();
+    }
+
+    // In-store POS sales: staff only.
+    match /orders/{id} {
+      allow read, write: if isStaff();
+    }
+
+    // Delivery men: staff only.
+    match /riders/{id} {
+      allow read, write: if isStaff();
+    }
+
+    // Expenses: staff only.
+    match /expenses/{id} {
+      allow read, write: if isStaff();
+    }
+
+    // Online orders: customers create and read their own, staff manage all.
+    match /onlineOrders/{id} {
+      allow create: if signedIn()
+                    && request.resource.data.customerId == request.auth.uid
+                    && request.resource.data.status == 'Pending';
+      allow read: if signedIn()
+                  && (resource.data.customerId == request.auth.uid || isStaff());
+      allow update: if isStaff();
+    }
+  }
+}
